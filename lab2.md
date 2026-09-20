@@ -1,205 +1,166 @@
-# Adding IP cores in PL
+# Lab 2 - AXI GPIO, Switches and Push-Buttons
 
-## Objectives
+[Previous: Lab 1](lab1.md) | [Home](README.md) | [Next: Lab 3](lab3.md)
 
-After completing this lab, you will be able to:
-*	Configure the GP Master port of the PS to connect to IP in the PL
-*	Add additional IP to a hardware design
-*	Setup some of the compiler settings
+**Objective:** access two AXI GPIO peripherals in the PL from the PS.
+Switch and button values are displayed in the serial terminal. This lab does
+not drive the LEDs yet.
 
-## Steps
+## 1. Copy the project and enable the PS-PL connection
 
-### Open the Project
+Make a copy of the Lab 1 Vivado project using
+**File > Project > Save As... / Save Project As...**, depending on the
+project-save command shown in your installation. A plain **Save As** command
+that saves only an individual file is not sufficient.
+The new project should be `{work}/vivado/lab2/lab2.xpr`.
+Work in the copy so that Lab 1 remains available as a known starting point.
 
-1. Open the previous project, or the lab1 project from the **{labsolutions}** directory, and save the project as lab2. Open the Block Design.
-1.	Start Vivado, if necessary, and open either the lab1 project (lab1.xpr) you created in the previous lab or from the **{labsolutions}** directory using the Open Project link in the Getting Started page.
-2.	Select **File > Save Project As…** to open the Save Project As dialog box. Enter lab2 as the project name.  Make sure that the Create Project Subdirectory option is checked, the project directory path is **{labs}** and click OK.
-This will create the lab2 directory and save the project and associated directory with lab2 name.
+In the PS configuration, enable the **M_AXI_GP0** master port,
+**FCLK_CLK0** output and **FCLK_RESET0_N** reset output.
+Set the PL output clock to **100 MHz**.
+Do not change the CPU frequency, DDR settings or UART1 for this step.
 
-### Add Two Instances of GPIO
+## 2. Add two AXI GPIO IPs
 
-1.	In the Sources panel, expand system_wrapper, and double-click on the system.bd (system_i) file to invoke IP Integrator.
-2.	Double click on the Zynq block in the diagram to open the Zynq configuration window.
-3.	Select **PS-PL Configuration** page menu on the left.
-4.	Expand **AXI Non Secure Enablement > GP Master AXI Interfaces**, if necessary, and click on Enable **M_AXI_GP0 interface** check box under the field to enable the AXI GP0 port.
-5.	Expand **General > Enable Clock Resets** and select the FCLK_RESET0_N option.
-6.	Select the **Clock Configuration** tab on the left. Expand the **PL Fabric Clocks** and select the FCLK_CLK0 option (with requested clock frequency of 100.000000 MHz) and click OK.
-7.	Notice the additional *M_AXI_GPO* interface, and *M_AXI_GPO_ACLK*, *FCLK_CLK0*, and *FCLK_RESET0_N* ports are now included on the Zynq block. You can click the regenerate button to redraw the diagram to get something like this:
+Add two **AXI GPIO** IPs. Use these exact instance names:
 
-<p align="center">
-<img src ="./pics/lab 2/1BlockAXI.JPG " width="40%" height="80%"/>
-</p>
-<p align = "center">
-<i>Zynq system with AXI and clock interfaces</i>
-</p>
+```text
+switches
+buttons
+```
 
-8.	Next add an IP by **right clicking on the Diagram window> Add IP** and search for AXI GPIO in the catalog
+Configure each for one channel, **GPIO width = 4**, **All Inputs**,
+**Enable Dual Channel = off**, and **Enable Interrupt = off**.
 
-9.	Double-click the _AXI GPIO_ to add the core to the design. The core will be added to the design and the block diagram will be updated.
+These instructions assign the external PL pins using a dedicated XDC file.
+Do not also apply automatic board GPIO pin assignments to these peripherals.
+Keep the legacy board preset used for the PS.
 
-10.	Click on the AXI GPIO block to select it, and in the properties tab, change the name to **switches**
+Use **Run Connection Automation** to connect both **S_AXI** interfaces to the
+PS **M_AXI_GP0** master. Vivado may also create interconnect and reset logic.
+Generated block names and the interconnect type may differ from the old
+screenshots.
 
-   <p align="center">
-   <img src ="./pics/lab 2/2AXIblockadd.JPG "  width="50%" height="80%"/>
-   </p>
-   <p align = "center">
-   <i>Change AXI GPIO default name</i>
-   </p>
+Inspect the actual connections:
 
-11.	Double click on the _AXI GPIO block_ to open the customization window.
-12.	From the Board Interface drop down, select sws 8bits for _ZedBoard_, sws 4bits for _Zybo_ or sws 2bits for _PYNQ-Z2_ for **GPIO IP Interface**.
-13.	Next, click the IP configuration tab, and notice the width has already been set to match the switches on the *Zedboard* (8), *Zybo* (4) or *PYNQ-Z2* (2)  
+| Signal/function | Connection |
+|---|---|
+| PS `M_AXI_GP0_ACLK` | `FCLK_CLK0` |
+| Both GPIO `s_axi_aclk` inputs | `FCLK_CLK0` |
+| AXI infrastructure clocks | The same 100 MHz clock |
+| GPIO `s_axi_aresetn` | Processor System Reset `peripheral_aresetn` |
+| AXI infrastructure resets | Appropriate synchronized active-low reset |
+| Reset block clock/input | FCLK and the PS reset, with the correct polarity |
 
-Notice that the peripheral can be configured for two channels, but, since we want to use only one channel without interrupt, leave the Enable Dual Channel and Enable Interrupt unchecked.  
+The PS `FCLK_RESET0_N` signal is active-low. Match the reset block's external
+reset polarity to the connection, and review the result of automation.
+**Validate Design** must not report any unconnected required clock, reset or
+bus signals.
 
-14.	Click OK to save and close the customization window
-15.	Notice that **Designer assistance** is available. Click on Run Connection Automation, and select **/switches/S_AXI**
-16.	Click OK when prompted to automatically connect the master and slave interfaces
+## 3. Create external ports and apply the legacy Zybo pinout
 
-   <p align="center">
-   <img src ="./pics/lab 2/3Dsgnswauto.JPG "  width="60%" height="80%"/>
-   </p>
-   <p align = "center">
-   <i>Design with switches automatically connected</i>
-   </p>
+Expand the GPIO interface on each IP block. Apply **Make External** to the
+actual **`gpio_io_i`** input vector; do not export a GPIO signal with a different
+direction.
 
-  Notice two additional blocks, Processor System Reset, and AXI Interconnect have automatically been added to the design. (The blocks can be dragged to be rearranged, or the design can be redrawn.).
+Rename the resulting plain input ports as follows:
 
-18.	Add another instance of the GPIO peripheral (Add IP). Name it as **buttons**
-19.	Double click on the IP block, select the _btns GPIO interface_ (btns_5bits for the _Zedboard_, btns_4bits for the _Zybo_ and btns 4bits for the _PYNQ-Z2_) and click OK.
-At this point connection automation could be run, or the block could be connected manually. This time the block will be connected manually.
-20.	Double click on the _AXI Interconnect_ (name : ps7_0_axi_periph) and change the Number of **Master Interfaces** to 2 and click OK
+```text
+switches[3:0]
+buttons[3:0]
+```
 
-    <p align="center">
-    <img src ="./pics/lab 2/4AXIrecust.JPG "  width="60%" height="80%"/>
-    </p>
-    <p align = "center">
-    <i>Add master port to AXI Interconnect</i>
-    </p>
+The `[3:0]` notation indicates width; it is not text to type into the port name.
+The port names are `switches` and `buttons`, each four bits wide.
+This differs from exporting an entire GPIO interface, which can produce
+wrapper names such as `switches_tri_i`.
 
-21.	Click on the s_axi port of the buttons AXI GPIO block (name: buttons), and drag the pointer towards the AXI Interconnect block.
+Select **Add Sources > Add or Create Constraints** and add
+`sources/vitis2022_2/constraints/zybo_legacy_gpio.xdc`.
 
-      The message 'Found 1 interface' should appear, and a green tick should appear beside the M01_AXI port on the AXI Interconnect indicating this is a valid port to connect to. Drag the pointer to this port and release the mouse button to make the connection.
-22.	In a similar way, connect the following ports:
+| Bit | SW pin | BTN pin |
+|---|---|---|
+| 0 | G15 | R18 |
+| 1 | P15 | P16 |
+| 2 | W13 | V16 |
+| 3 | T16 | Y16 |
 
-    *buttons s_axi_aclk -> Zynq7 Processing System  FCLK_CLK0*
+All PL signals used here are **LVCMOS33**.
+The pin assignments come from the
+[Digilent legacy Zybo master XDC](docs/vitis2022_2/SOURCES.md).
+They do not describe the voltage settings of the PS MIO banks.
 
-    *buttons s_axi_aresetn -> Processor System Reset peripheral_aresetn*
+Check the generated wrapper's port names. If the automatically generated
+names differ, correct either the port names or the XDC `get_ports` expressions.
+Do not ignore `get_ports` warnings. Do not apply conflicting board-generated
+and manual constraints to the same port.
 
-    *AXI Interconnect M01_ACLK -> Zynq7 Processing System  FCLK_CLK0*
+## 4. Assign addresses, generate the bitstream and export the XSA
 
-    *AXI Interconnect M01_ARESETN -> Processor System Reset peripheral_aresetn*
+In **Address Editor**, map both peripherals into the PS Data address space.
+The following layout is suitable, but the software does not hard-code these
+addresses:
 
-    The block diagram should look similar to this:
+| Peripheral | Example base address | Range |
+|---|---|---|
+| `switches` | `0x41200000` | 64 KiB |
+| `buttons` | `0x41210000` | 64 KiB |
 
-    <p align="center">
-    <img src ="./pics/lab 2/5AXIbuttsw.JPG "  width="70%" height="80%"/>
-    </p>
-    <p align = "center">
-    <i>System Assembly View after Adding the Peripherals</i>
-    </p>
+Resolve any overlapping ranges or unmapped slaves. Save and validate the
+design, regenerate the required output products and wrapper, and select
+**Generate Bitstream**. Check DRC and implementation timing.
+For UCIO/NSTD errors, correct the pin constraints; do not downgrade the errors
+to force bitstream generation.
 
-23.	Click on the **Address Editor** tab, and expand **processing_system7_0 > Data > Unmapped Slaves** if necessary
-24.	Notice that switches has been automatically assigned an address, but buttons has not (since it was manually connected). Right click on btns_4bit and select Assign Address.
+Select **Export Hardware > Fixed > Include bitstream** and save to
+`{work}/export/lab2.xsa`.
 
-Note that both peripherals are assigned in the address range of _0x40000000_ to _0x7FFFFFFF_ (GP0 range).
+## 5. Create the Vitis application
 
-   <p align="center">
-   <img src ="./pics/lab 2/6AXIAdd.jpg"  width="70%" height="80%"/>
-   </p>
-   <p align = "center">
-   <i>Peripherals Memory Map</i>
-   </p>
+Follow the [common workflow](docs/vitis2022_2/VITIS_WORKFLOW.md):
 
-### Make GPIO Peripheral Connections External
-   <!--
-   3-1.	The push button and dip switch instances will be connected to corresponding pins on the board.  This can be done manually, or using Designer Assistance.  Normally, one would consult the board’s user manual to find this information.
-   -->
-1.	In the Diagram view, notice that **Designer Assistance** is available. We will manually create the ports and connect.
-2.	Right-Click on the _GPIO port_ of the switches instance and select **Make External** to create the external port. This will create the external port named **gpio** and connect it to the peripheral. Because Vivado is “board aware”, the pin constraints will be automatically applied to the port.
-3.	Select the gpio port and change the name to **switches** in its properties form.
-The width of the interface will be automatically determined by the upstream block.
-4.	For the buttons GPIO, click on the Run Connection Automation link.
-5.	In the opened GUI, select btns_5bits (for _ZedBoard_) or btns_4bits (for _Zybo_ and _PYNQ-Z2_) under the options section.
-6.	Click OK.
-7.	Select the created external port and change its name as buttons
-8.	Run Design Validation (**Tools -> Validate Design**) and verify there are no errors.
-The design should now look similar to the diagram below
+```text
+Workspace:   {work}/vitis/lab2_ws
+Platform:    zybo_lab2_platform, based on lab2.xsa
+Domain:      standalone / ps7_cortexa9_0 / 32-bit
+Application: lab2_gpio
+Template:    Empty Application (C)
+```
 
-    <p align="center">
-    <img src ="./pics/lab 2/7Finaldsgn.JPG "  width="80%" height="80%"/>
-    </p>
-    <p align = "center">
-    <i>Completed design</i>
-    </p>
+Import `lab2/lab2_gpio.c` and `common/board_gpio.h` from
+`sources/vitis2022_2` into the application's `src` directory.
+Keep the linker layout entirely in DDR for now.
+The platform's stdin/stdout settings must remain `ps7_uart_1`.
 
-1.	In the Flow Navigator, click **Run Synthesis**. (Click Save if prompted) and when synthesis completes, select Open Synthesized Design  and click OK
-2.	 In the shortcut Bar, select **I/O Planning** from the Layout dropdown menu
+`board_gpio.h` uses the `XPAR_SWITCHES_DEVICE_ID` and
+`XPAR_BUTTONS_DEVICE_ID` macros. Compilation deliberately fails if they are
+missing. Do not replace them with guessed values such as `0` and `1`.
+Check the Vivado instance names and the selected XSA.
 
-   <p align="center">
-   <img src ="./pics/lab 2/8iop.jpg"  width="30%" height="80%"/>
-   </p>
-   <p align = "center">
-   <i>Switch to the IO planning view</i>
-   </p>
+## 6. Run the application
 
-3.	In the I/O ports tab, expand the two GPIO icons, and expand *buttons_tri_i*, and *switches_tri_i*, and notice that the ports have been automatically assigned pin locations, along with the other Fixed IO ports in the design, and an I/O Std of _LVCMOS25_ (for *Zedboard*) and _LVCMOS33_ (for *Zybo* and *PYNQ-Z2*) has been applied. If they were not automatically applied, pin constraints can be included in a constraints file, or entered manually or modified through the I/O Ports tab.
+The Vitis launch configuration must now **program the PL as well**.
+The bitstream, platform and ELF must all correspond to the same hardware.
 
-### Generate Bitstream and Export to SDK
+Expected serial output format:
 
-1.	Click on **Generate Bitstream**, and click Yes if prompted to **Launch Implementation** (Click Yes if prompted to save the design)
-2.	Click Cancel
-3.	Export the hardware by clicking **File > Export > Export Hardware** and click OK. This time, there is hardware in Programmable Logic (PL) and a bitstream has been generated and should be included in the export to SDK.
-4.	Click Yes to overwrite the hardware module.
-5.	Start SDK by clicking **File > Launch SDK** and click OK
+```text
+Lab 2: switches and buttons
+SW=0x0 BTN=0x0
+SW=0x1 BTN=0x0
+SW=0x1 BTN=0x1
+```
 
-### Generate TestApp Application in SDK
+Output is printed only when a value changes. The application samples every
+20 ms; this is not a complete push-button debouncing algorithm.
+The program runs continuously. Stop it with the debugger's
+**Suspend/Terminate** controls.
 
-1.	In SDK, right click on the mem_test project from the previous lab and select **Close Project**
-2.	Do the same for mem_test_bsp and system_wrapper_hw_platform_0
-3.	From the File menu select **File > New > Board Support Package**
-4.	Click Finish with the standalone OS selected and default project name as standalone_bsp_0
-5.	Click OK to generate the board support package named standalone_bsp_0
-6.	From the File menu select **File > New > Application Project**
-7.	Name the project **TestApp**, select Use existing board support package, select  standalone_bsp_0 and click Next
+## 7. Checkpoint
 
-    <p align="center">
-    <img src ="./pics/lab 2/9sdk.JPG "  width="60%" height="80%"/>
-    </p>
-    <p align = "center">
-    <i>Application Project settings</i>
-    </p>
+Test every SW and BTN bit individually. Compare the displayed value with the
+physical board labels. Record both GPIO addresses from Address Editor and
+the corresponding definitions in the generated `xparameters.h`.
+Proceed to Lab 3 only after the GPIO system works reliably.
 
-8.	Select Empty Application and click Finish
-This will create a new Application project using the created board support package.
-9.	The library generator will run in the background and will create the xparameters.h file in the lab2\lab2.sdk\standalone_bsp_0\ps7_cortexa9_0\include directory
-10.	Expand TestApp in the project view, and right-click on the src folder, and select Import
-11.	Expand General category and double-click on File System
-12.	Browse to the **{sources}\lab2** folder
-13.	Select **lab2.c** and click Finish
-
-### Test in Hardware
-
-1.	Make sure that micro-USB cable(s) is(are) connected between the board and the PC. Turn ON the power of the board.
-2.	Open Terminal from **Window > Show View > Other..**
-3.	Click on the connect button and if required, select appropriate COM port (depends on your computer), and configure it with the parameters as shown in lab1. (These settings may have been saved from previous lab, lab1)
-1.	Select **Xilinx Tools > Program FPGA**
-
-2.	Click Program to download the hardware bitstream.  When FPGA is being programmed, the DONE LED (green color) will be off, and will turn on again when the FPGA is programmed
-3.	Select TestApp in Project Explorer, right-click and select **Run As > Launch on Hardware** (System Debugger) to download the application, execute *ps7_init*, and execute *TestApp.elf*
-4.	You should see the something similar to the  following output on Terminal console
-
-    <p align="center">
-    <img src ="./pics/lab 2/aop.jpg"  width="30%" height="80%"/>
-    </p>
-    <p align = "center">
-    <i> SDK Terminal output </i>
-    </p>
-
-5.	Select Console tab and click on the Terminate button ( ) to stop the program
-6.	Close SDK and Vivado programs by selecting **File > Exit** in each program
-7.	Power OFF the board
-
-## Conclusion
-
-GPIO peripherals were added from the IP catalog and connected to the Processing System through the 32b Master GP0 interface.  The peripherals were configured and external FPGA connections were established.  A TestApp application project was created and the functionality was verified after downloading the bitstream and executing the program.
+References: [original Lab 2, AXI GPIO and Digilent XDC](docs/vitis2022_2/SOURCES.md).

@@ -1,0 +1,15 @@
+# Append to the existing root .gitignore; do not replace existing rules.
+# Prefer keeping the entire build/workspace outside the repository.
+/zybo_work/
+/work_vitis2022_2/
+/.Xil/
+/.metadata/
+*.jou
+*.log
+*.str
+*.tmp
+*.dcp
+*.wdb
+# Keep source HDL/XDC/Tcl, packaged custom IP, C headers, and linker scripts.
+# Do not ignore *.xsa globally: a versioned hardware handoff can be useful.
+# Never globally ignore a folder called 'sources' or 'ip_repo'.

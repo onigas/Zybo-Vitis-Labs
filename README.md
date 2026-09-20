@@ -1,110 +1,60 @@
-# Embedded System Design Flow on Zynq
+# Zynq Labs - Zybo Legacy, Vivado / Vitis 2022.2
 
-## Labs outline
+**Target hardware:** original Digilent Zybo, Zynq-7010, `xc7z010clg400-1`.  
+**Tools:** Vivado 2022.2 + Vitis 2022.2, using the Eclipse-based Vitis IDE.  
+**Software:** C, bare-metal `standalone`, `ps7_cortexa9_0`, 32-bit, JTAG.
 
-The purpose of the lab exercises of Embedded System Design Flow on Zynq is to walk you through a complete hardware and software processor system design. Each lab will build upon the previous lab. The following diagram represents the completed design of all the labs in this workshop (shown below).
+This is an English-language adaptation of the five
+[XUP Zynq-Design-using-Vivado](https://github.com/xupgit/Zynq-Design-using-Vivado)
+labs for Vitis 2022.2. **It is not intended for the Zybo Z7-10 or Z7-20.**
+The old SDK screenshots are not Vitis instructions; follow the guides below
+for the updated workflow.
 
-<p align="center">
-<img src ="./pics/Readme/Completed Design.JPG">
-</p>
-<p align = "center">
-<i>Completed Design</i>
-</p>
+## Getting started
 
+Read the [setup guide](docs/vitis2022_2/SETUP.md) first, followed by the
+[common Vitis workflow](docs/vitis2022_2/VITIS_WORKFLOW.md).
 
-## Source Files Setup
+| Lab | Exercise | Hardware |
+|---|---|---|
+| [Lab 1](lab1.md) | PS system, XSA, platform, DDR test | PS, DDR, UART1 |
+| [Lab 2](lab2.md) | AXI GPIO, switches and push-buttons | Lab 1 + two GPIO peripherals |
+| [Lab 3](lab3.md) | Custom AXI4-Lite LED IP, IP Packager, 8 KiB BRAM | Lab 2 + LED IP + BRAM |
+| [Lab 4](lab4.md) | LED control, linker, DDR/BRAM placement | Lab 3 hardware |
+| [Lab 5](lab5.md) | Cortex-A9 private timer, polling, debugging | Lab 3 hardware |
 
-To use the source files for each of the labs in this workshop, you have to download or clone this repository from GitHub. 
+The adaptation also addresses several errors and ambiguities: a zero switch
+value does not produce a zero timer reload; the exit button is explicitly
+**BTN0**; and the timer frequency is derived from the BSP.
+In Lab 4, **code/data remain in DDR**, while the **heap/stack move to BRAM**.
+See the [migration notes](docs/vitis2022_2/MIGRATION_NOTES.md) for the changes.
 
-On the main GitHub webpage for a repository, you can select **Clone or download** and select **Download Zip** to download an archive of the repository. You can then extract this to a folder on your local machine. 
+## Directory layout
 
-If you prefer to use **git** you can clone this repository:
-
+```text
+lab1.md ... lab5.md              Updated lab instructions
+sources/vitis2022_2/             New C examples, common headers, legacy Zybo XDC
+scripts/vitis2022_2/             Vivado Tcl helpers
+docs/vitis2022_2/                Setup, Vitis, GitHub and validation guides
+tests/vitis2022_2/               Host-side tests; not FPGA simulation
 ```
-  git clone https://github.com/xupgit/Zynq-Design-using-Vivado.git
-```
-In the instructions for the labs;
 
-**{sources}** refers to the ./sources directory in this respoitory once you have copied or cloned it to a local directory. 
+The upstream `sources/lab*`, `labsolutions`, `board_files`, `pics` and `slides`
+directories can remain in the original clone. The old projects and solutions
+**have not been automatically converted into Vivado 2022.2 projects**.
+For this version, use the new `sources/vitis2022_2` files and build the hardware
+by following the labs.
 
-**{labs}** refers to the location which you will use as your workspace for the labs in the workshop
+## Validation status
 
----
-**NOTE**
+This is a source- and documentation-level migration, not a prebuilt project
+package. It does not contain ready-made `.bit`, `.xsa`, `.elf` or `.xpr` files.
+No Vivado/Vitis 2022.2 build or physical Zybo test has been performed here.
+The completed checks and remaining hardware work are listed in the
+[test status](docs/vitis2022_2/TEST_STATUS.md).
 
-Board support for the PYNQ-Z1 and PYNQ-Z2 are not included in Vivado by default. The relevant files need to be extracted and saved to:
-
- {Vivado installation}\data\boards\board_files\
-
-These files can be downloaded from
-
-PYNQ-Z1:[/board_files](https://www.xilinx.com/support/documentation/university/vivado/workshops/vivado-adv-embedded-design-zynq/materials/2018x/PYNQZ1/pynq-z1.zip). 
-
-PYNQ-Z2:[/board_files](https://www.xilinx.com/support/documentation/university/vivado/workshops/vivado-adv-embedded-design-zynq/materials/2018x/PYNQZ2/pynq-z2.zip).
-
----
-
-## Hardware Setup
-
-**PYNQ-Z1**/**PYNQ-Z2**:  Connect a micro USB from the board to the PC. Make sure that a jumper is connected to JTAG (between JP1_1 and JP1_2) and another one of them should be connected across the USB pins (between J9_2 and J9_3).
-
-**Zybo**:  Make sure that the JP7 is set to select USB power, and JP5 is set to JTAG. Make sure that a micro-USB cable is connected to the JTAG PROG connector (next to the power supply connector). 
-
-**ZedBoard**:  Make sure that two micro-usb cables are used between the PC and the PROG and the UART connectors of the board and that the board is placed in the JTAG mode (MIO6-MIO2 jumpers are in the Dn position). 
-
-## Labs Overview:
-
-### Lab 1
-
-  In this lab, you will use IP Integrator to create a processing system based design consisting of the following :
-  *	ARM Cortex A9 core (PS)
-  *	UART for serial communication
-  *	DDR3 controller for external DDR3_SDRAM memory
-
-
-    <p align="center">
-    <img src ="./pics/Readme/l1view.JPG" width="40%" height="80%"/>
-    </p>
-    <p align = "center">
-    <i>Processor Design of this Lab</i>
-    </p>
-### Lab 2
-   This lab guides you through the process of extending the processing system you created in the previous lab by adding two GPIO (General Purpose Input/Output) IPs.
-   <p align="center">
-   <img src ="./pics/Readme/l2view.jpg" width="80%" height="80%"/>
-   </p>
-   <p align = "center">
-   <i>Extend the System from the Previous Lab</i>
-   </p>
-
-### Lab 3
-
-  This lab guides you through the process of creating and adding a custom peripheral to a processor system by using the Vivado IP Packager. You will create an AXI4Lite interface peripheral.
-
-  You will extend the Lab 2 hardware design by creating and adding an AXI peripheral to the system, and connecting it to the LEDs on the Zynq board you are using.  You will use the IP Packager to generate the custom IP.    Next, you will connect the peripheral to the system and add pin location constraints to connect the LED display controller peripheral to the on-board LED display.  Finally, you will add BRAM Controller and BRAM before generating the bitstream.
-
-  <p align="center">
-  <img src ="./pics/Readme/l3view.jpg" width="80%" height="80%"/>
-  </p>
-  <p align = "center">
-  <i>Design updated from the previous lab</i>
-  </p>
-
-### Lab 4
-
-  This lab guides you through the process of writing a basic software application.  The software you will develop will write to the LEDs on the Zynq board.  An AXI BRAM controller and associated 8KB BRAM were added in the last lab. The application will be run from the BRAM by modifying the linker script for the project to place the text section of the application in the BRAM.  You will verify that the design operates as expected, by testing in hardware.
-
-  The design was extended at the end of the previous lab to include a memory controller, and the bitstream should now be available. A basic software application will be developed to access the LEDs on the Zynq boards.  
-
-### Lab 5
-
-   This lab guides you through the process of writing a software application that utilizes the private timer of the CPU.  You will refer to the timer’s API in the SDK to create and debug the software application.  The application you will develop will monitor the dip switch values and increment a count on the LEDs.  The application will exit when the center push button is pressed.
-
-   You will use the hardware design created in lab 4 to use CPU’s private timer (see Figure).  You will develop the code to use it.
-
-   <p align="center">
-   <img src ="./pics/Readme/l5view.jpg" width="80%" height="80%"/>
-   </p>
-   <p align = "center">
-   <i>Final design</i>
-   </p>
+To publish to your own GitHub account, follow the
+[GitHub Desktop guide](docs/vitis2022_2/GITHUB_DESKTOP.md).
+Technical references are listed in [SOURCES.md](docs/vitis2022_2/SOURCES.md).
+Preserve the original XUP attribution and licensing terms; this addition
+does not relicense the upstream repository.
