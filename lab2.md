@@ -10,7 +10,7 @@
 After completing this lab, you will be able to:
 * Configure the GP Master port of the PS to connect to IP in the PL.
 * Add additional IP to a hardware design.
-* Set up compiler settings and run a GPIO application in Vitis.
+* Build and run a GPIO application in Vitis.
 
 ## Steps
 
@@ -137,40 +137,23 @@ After completing this lab, you will be able to:
 1. Set the application name to **TestApp**, keep **TestApp_system** as the system-project name, and select **ps7_cortexa9_0**. Click **Next**.
 1. On the **Domain** page, select **standalone**, **32-bit** if shown, and language **C**. Keep the proposed domain name and click **Next**.
 1. Select **Empty Application (C)** and click **Finish**. This one wizard creates the platform, standalone domain/BSP, system project and application.
-1. Open **lab2_platform > platform.spr**, select the application's standalone domain, and open **Board Support Package > Modify BSP Settings**. Under **standalone**, set **stdin** and **stdout** to **ps7_uart_1**. Apply the settings.[^bsp]
 
 ### Import and Build TestApp
 
 1. Expand **TestApp**, right-click **src**, and select **Import > General > File System**.
 1. Browse to **{sources}/lab2**, select **lab2.c**, and click **Finish**. Keep this original GPIO polling exercise.
-1. Open **lab2.c** and add the declarations for the functions it already uses:
-
-    ```c
-    #include "xil_printf.h"
-    #include "sleep.h"
-    ```
-
-1. Build the platform using **lab2_platform > Build Project**, then open **xparameters.h** from the application's include line using **Open Declaration**. Check that **XPAR_SWITCHES_DEVICE_ID** and **XPAR_BUTTONS_DEVICE_ID** are defined. Do not replace device IDs with base addresses or edit the generated header.
-1. Right-click **TestApp > Properties > C/C++ Build > Settings**. For the **Debug** configuration, select the compiler's **Optimization** page and use **None (-O0)**. On **Debugging**, retain debug information. Apply the settings.[^flags]
-1. Select **Project > Build All**. Verify that **TestApp/Debug/TestApp.elf** is produced without build errors.
+1. Select **Project > Build All**.
 
 ### Test in Hardware
 
 1. With the board powered off, set **JP5 to JTAG** and, for USB power, **JP7 to USB**. Connect a micro-USB cable to **JTAG PROG**, then turn on the board. See [Hardware Setup](./README.md#hardware-setup).
 1. Open a serial terminal from **Window > Show View > Other...** (search for **Terminal**), or use an external serial terminal. Connect to the board's COM port using **115200 baud, 8 data bits, no parity, 1 stop bit, no flow control**. Connect before running the application.
-1. Select **TestApp**, then open **Run > Run Configurations...**. Create a **Single Application Debug** configuration named **TestApp_hw**. Select the local hardware-server connection, **lab2_platform**, **ps7_cortexa9_0**, and **TestApp/Debug/TestApp.elf**, with application download enabled.[^run]
-1. On **Target Setup**, enable **Reset entire system**. Enable **Program FPGA** and select the bitstream supplied by **lab2_platform**. Use the bitstream from this XSA, not from an earlier hardware design.
-1. Clear **Use FSBL flow for initialization** and select this platform's **ps7_init.tcl** as the initialization file, normally under **lab2_platform/hw**. Keep PS initialization enabled; where shown, select both **Run ps7_init** and **Run ps7_post_config**.[^target]
-1. Click **Apply > Run**. The launch initializes the board and downloads the application. Reuse this configuration for subsequent runs. If execution stops at `main`, click **Resume**.
-
-1. Change the switches and press the user buttons. The serial terminal should display the switch and button values in hexadecimal. With four inputs in each group, the input values range from **0x0** to **0xF**. The existing `sleep(1)` call spaces the reports by approximately one second.
+1. Right-click **TestApp** and select **Run As > Single Application Debug**.[^run]
 
     <p align="center">
     <img src="./pics/lab 2/aop.jpg" width="30%" alt="Example GPIO application output"/>
     </p>
     <p align="center"><i>Example GPIO application output</i></p>
-
-1. Suspend the target when finished, then terminate the launch connection. Close Vitis and Vivado and power off the board. Disconnecting a debug session alone is not a substitute for stopping a running target.
 
 ## Conclusion
 
@@ -184,7 +167,4 @@ Original exercise and figures: [XUP - Lab 2](https://github.com/xupgit/Zynq-Desi
 
 [^xsa]: AMD/Xilinx, [Hardware export](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Creating-a-Hardware-Design-XSA-File).
 [^application]: AMD/Xilinx, [Application project wizard](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Creating-a-Standalone-Application-Project).
-[^bsp]: AMD/Xilinx, [Board Support Package settings](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Board-Support-Package-Settings-Page).
-[^flags]: AMD/Xilinx, [Debug and optimization settings](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Specifying-Debug-and-Optimization-Compiler-Flags).
 [^run]: AMD/Xilinx, [Launch configurations](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Launch-Configurations).
-[^target]: AMD/Xilinx, [Target setup and PS initialization](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Target-Setup-Page).
