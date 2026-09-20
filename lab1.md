@@ -145,32 +145,22 @@ After completing this lab, you will be able to:
 1. Set the application name to **mem_test**, keep **mem_test_system** as the system-project name, and select **ps7_cortexa9_0**. Click **Next**.
 1. On the **Domain** page, select **standalone**, **32-bit** if shown, and language **C**. Keep the proposed domain name and click **Next**.
 1. Select **Memory Tests** and click **Finish**. This one wizard creates the platform, standalone domain/BSP, system project and application.
-1. Open **lab1_platform > platform.spr**, select the application's standalone domain, and open **Board Support Package > Modify BSP Settings**. Under **standalone**, set **stdin** and **stdout** to **ps7_uart_1**. Apply the settings.[^bsp]
 
 ### Build and Examine the Memory Test
 
 1. Select **Project > Build All**. Confirm that the platform and application build without errors and that **mem_test/Debug/mem_test.elf** is generated.
-1. Expand **mem_test > src**. Open **memorytest.c** to examine the test calls and **memory_config_g.c** to inspect the generated memory-region list. Keep the template's generated **lscript.ld** and memory placement unchanged.[^memtemplate]
-
-    The **Memory Tests** template performs destructive write/read tests. Its generated placement and range selection keep the test program out of the ranges it exercises. Do not move the application into a region that it tests. A displayed region size does not mean that the whole region has been tested; the 2022.2 template tests a 4 KiB block at the beginning of each selected range.[^memcode]
+1. Expand **mem_test > src**. Open **memorytest.c** to examine the test calls.
 
 ### Test in Hardware
 
 1. With the board powered off, set **JP5 to JTAG** and, for USB power, **JP7 to USB**. Connect a micro-USB cable to **JTAG PROG**, then turn on the board. See [Hardware Setup](./README.md#hardware-setup).
 1. Open a serial terminal from **Window > Show View > Other...** (search for **Terminal**), or use an external serial terminal. Connect to the board's COM port using **115200 baud, 8 data bits, no parity, 1 stop bit, no flow control**. Connect before running the application.
-1. Select **mem_test**, then open **Run > Run Configurations...**. Create a **Single Application Debug** configuration named **mem_test_hw**. Select the local hardware-server connection, **lab1_platform**, **ps7_cortexa9_0**, and **mem_test/Debug/mem_test.elf**, with application download enabled.[^run]
-1. On **Target Setup**, enable **Reset entire system**. Clear **Program FPGA**. This PS-only design has no bitstream.
-1. Clear **Use FSBL flow for initialization** and select this platform's **ps7_init.tcl** as the initialization file, normally under **lab1_platform/hw**. Keep PS initialization enabled; where shown, select both **Run ps7_init** and **Run ps7_post_config**.[^target]
-1. Click **Apply > Run**. The launch initializes the board and downloads the application. Reuse this configuration for subsequent runs. If execution stops at `main`, click **Resume**.
-
-1. Observe the memory-test messages in the **serial terminal**. Verify that every reported test says **PASSED!**, with no **FAILED!** result. The completion message by itself is not a pass criterion.[^memcode]
+1. Right-click **mem_test** and select **Run As > Single Application Debug**.
 
     <p align="center">
     <img src="./pics/lab 1/etermop.jpg" width="80%" alt="Example memory-test output; regions and addresses depend on the generated platform"/>
     </p>
     <p align="center"><i>Example memory-test output; regions and addresses depend on the generated platform</i></p>
-
-1. Terminate the launch connection and close Vitis and Vivado.
 
 ## Conclusion
 
@@ -184,8 +174,3 @@ Original exercise and figures: [XUP - Lab 1](https://github.com/xupgit/Zynq-Desi
 
 [^xsa]: AMD/Xilinx, [Hardware export](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Creating-a-Hardware-Design-XSA-File).
 [^application]: AMD/Xilinx, [Application project wizard](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Creating-a-Standalone-Application-Project).
-[^bsp]: AMD/Xilinx, [Board Support Package settings](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Board-Support-Package-Settings-Page).
-[^memtemplate]: AMD/Xilinx, [Memory Tests template generation, 2022.2](https://github.com/Xilinx/embeddedsw/blob/xilinx_v2022.2/lib/sw_apps/memory_tests/data/memory_tests.tcl).
-[^memcode]: AMD/Xilinx, [Memory Tests application, 2022.2](https://github.com/Xilinx/embeddedsw/blob/xilinx_v2022.2/lib/sw_apps/memory_tests/src/memorytest.c).
-[^run]: AMD/Xilinx, [Launch configurations](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Launch-Configurations).
-[^target]: AMD/Xilinx, [Target setup and PS initialization](https://docs.amd.com/r/2022.2-English/ug1400-vitis-embedded/Target-Setup-Page).
